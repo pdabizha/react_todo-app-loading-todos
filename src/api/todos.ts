@@ -5,9 +5,4 @@ export const USER_ID = 2293;
 
 export const getTodos = () => {
   return client.get<Todo[]>(`/todos?userId=${USER_ID}`);
-
-  // Несуществующий эндпоинт
-  // return client.get<Todo[]>('/invalid-url');
 };
-
-// Add more methods here

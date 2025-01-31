@@ -16,28 +16,28 @@ export const TodoList: React.FC<Props> = ({
 }) => {
   return (
     <section className="todoapp__main" data-cy="TodoList">
-      {listOfTodos.map(todo => {
-        const isChecked = completedTodosId.includes(todo.id);
+      {listOfTodos.map(({ id, title }) => {
+        const isChecked = completedTodosId.includes(id);
 
         return (
           <div
-            key={todo.id}
+            key={id}
             data-cy="Todo"
             className={cn('todo', { completed: isChecked })}
           >
             {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
             <label className="todo__status-label">
               <input
-                id={`todo__status-${todo.id}`}
+                id={`todo__status-${id}`}
                 data-cy="TodoStatus"
                 type="checkbox"
                 className="todo__status"
                 checked={isChecked}
-                onChange={() => selectTodo(todo.id)}
+                onChange={() => selectTodo(id)}
               />
             </label>
             <span data-cy="TodoTitle" className="todo__title">
-              {todo.title}
+              {title}
             </span>
             <button type="button" className="todo__remove" data-cy="TodoDelete">
               ×

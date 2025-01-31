@@ -1,33 +1,32 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { getTodos } from './api/todos';
 import { Todo } from './types/Todo';
 import { TodoList } from './components/TodoList/TodoList';
-import { ErrorSMS } from './components/ErrorSMS/ErrorSMS';
+import { ErrorNotification } from './components/ErrorNotification';
 import { FilterTodo } from './components/FilterTodo/FilterTodo';
+import { FilterOption } from './types/FilterOption';
 
 export const App: React.FC = () => {
+  const [todosFromServer, setTodosFromServer] = useState<Todo[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [fullTodos, setFullTodos] = useState<Todo[]>([]);
   const [completedTodosId, setCompletedTodosId] = useState<number[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isTodoChanges, setIsTodoChanges] = useState(false);
+  const [option, setOption] = useState(FilterOption.All);
 
   function loadTodos() {
     setLoading(true);
 
     getTodos()
       .then(data => {
-        setTodos(data);
-        setFullTodos(data);
-
-        const completedIds = data
-          .filter(todo => todo.completed)
-          .map(todo => todo.id);
-
-        setCompletedTodosId(completedIds);
+        setTodosFromServer(data);
+        setCompletedTodosId(
+          data.filter(todo => todo.completed).map(todo => todo.id),
+        );
       })
       .catch(() => setErrorMessage('Unable to load todos'))
       .finally(() => setLoading(false));
@@ -41,11 +40,21 @@ export const App: React.FC = () => {
     );
   };
 
-  const handleFilterChange = (filteredTodos: Todo[]) => {
-    setTodos(filteredTodos);
-  };
+  const filteredTodos = useMemo(() => {
+    return todosFromServer.filter(todo => {
+      if (option === FilterOption.Active) {
+        return !completedTodosId.includes(todo.id);
+      }
 
-  const itemLeft = fullTodos.length - completedTodosId.length;
+      if (option === FilterOption.Completed) {
+        return completedTodosId.includes(todo.id);
+      }
+
+      return true;
+    });
+  }, [todosFromServer, completedTodosId, option]);
+
+  const itemLeft = todosFromServer.length - completedTodosId.length;
 
   return (
     <div className="todoapp">
@@ -73,50 +82,20 @@ export const App: React.FC = () => {
         </header>
 
         <TodoList
-          listOfTodos={todos}
+          listOfTodos={filteredTodos}
           completedTodosId={completedTodosId}
           selectTodo={toggleTodo}
           isTodoChanges={isTodoChanges}
         />
 
         {/* Hide the footer if there are no todos */}
-        {fullTodos.length > 0 && (
+        {todosFromServer.length > 0 && (
           <footer className="todoapp__footer" data-cy="Footer">
             <span className="todo-count" data-cy="TodosCounter">
               {`${itemLeft} items left`}
             </span>
 
-            {/* Active link should have the 'selected' class */}
-            {/* <nav className="filter" data-cy="Filter">
-              <a
-                href="#/"
-                className="filter__link selected"
-                data-cy="FilterLinkAll"
-              >
-                All
-              </a>
-
-              <a
-                href="#/active"
-                className="filter__link"
-                data-cy="FilterLinkActive"
-              >
-                Active
-              </a>
-
-              <a
-                href="#/completed"
-                className="filter__link"
-                data-cy="FilterLinkCompleted"
-              >
-                Completed
-              </a>
-            </nav> */}
-            <FilterTodo
-              allTodos={fullTodos}
-              completedTodos={completedTodosId}
-              onSelect={handleFilterChange}
-            />
+            <FilterTodo selectedOption={option} onSelect={setOption} />
 
             {/* this button should be disabled if there are no completed todos */}
             <button
@@ -133,7 +112,10 @@ export const App: React.FC = () => {
 
       {/* DON'T use conditional rendering to hide the notification */}
       {/* Add the 'hidden' class to hide the message smoothly */}
-      <ErrorSMS message={errorMessage} onClose={() => setErrorMessage('')} />
+      <ErrorNotification
+        message={errorMessage}
+        onClose={() => setErrorMessage('')}
+      />
       {/*
         ErrorNotification text
 
